@@ -1,20 +1,6 @@
 !
 ! This program tests the CUDA kernel for Householder transformations.
 ! It is separeted from the 4th step of the ELPA2 eigensolver.
-! Some variables are renamed as follows:
-!
-! Name in ELPA2 | Name here
-! -------------------------
-! nbw           | nbw
-! max_blk_size  | na
-! a_dim2        | na+nbw
-! stripe_width  | stripe
-! stripe_count  | 1
-! istripe       | 1
-! off           | 0
-! a_off         | 0
-! nl            | stripe
-! ncols         | na
 !
 program hh_test
 
@@ -24,23 +10,21 @@ program hh_test
   implicit none
 
   character(10) :: arg
-
-  integer :: nbw
-  integer :: na
-  integer :: n
-
+  integer :: nbw ! Length of Householder vectors (b==nbw)
+  integer :: nn ! Length of eigenvectors (n)
+  integer :: nr ! (N_R==n+b-1)
+  integer :: n_rand
   integer :: i
   real(c_double) :: dotp
   real(c_double) :: err
 
   integer, allocatable :: seed(:)
+  real(c_double), allocatable :: evec1(:,:) ! Eigenvector matrix (X)
+  real(c_double), allocatable :: evec2(:,:) ! Eigenvector matrix (X)
+  real(c_double), allocatable :: hh(:,:) ! Householder vectors (v)
+  real(c_double), allocatable :: tau(:) ! (tau)
 
-  real(c_double), allocatable :: evec1(:,:)
-  real(c_double), allocatable :: evec2(:,:)
-  real(c_double), allocatable :: hh(:,:)
-  real(c_double), allocatable :: tau(:)
-
-  integer, parameter :: stripe = 1024
+  integer, parameter :: nc = 1024 ! Number of eigenvectors (N_C)
 
   ! Read command line arguments
   if(command_argument_count() == 2) then
@@ -65,15 +49,19 @@ program hh_test
 
     call get_command_argument(2,arg)
 
-    read(arg,*) na
+    read(arg,*) nn
 
-    if(na <= 0) then
-      na = 1000
+    if(nn <= 0) then
+      nn = 1000
     end if
 
+    nr = nn+nbw-1
+
     write(*,"(2X,A)") "Test parameters:"
-    write(*,"(2X,A,I10)") "| nbw ",nbw
-    write(*,"(2X,A,I10)") "| na  ",na
+    write(*,"(2X,A,I10)") "| b  : ",nbw
+    write(*,"(2X,A,I10)") "| n  : ",nn
+    write(*,"(2X,A,I10)") "| nr : ",nr
+    write(*,"(2X,A,I10)") "| nc : ",nc
   else
     write(*,"(2X,A)") "################################################"
     write(*,"(2X,A)") "##  Wrong number of command line arguments!!  ##"
@@ -86,13 +74,14 @@ program hh_test
   end if
 
   ! Generate random data
-  call random_seed(size=n)
+  call random_seed(size=n_rand)
 
-  allocate(seed(n))
-  allocate(evec1(stripe,na+nbw))
-  allocate(evec2(stripe,na+nbw))
-  allocate(hh(nbw,na))
-  allocate(tau(na))
+  ! Note: evec here is the transpose of X in the doc
+  allocate(seed(n_rand))
+  allocate(evec1(nc,nr))
+  allocate(evec2(nc,nr))
+  allocate(hh(nbw,nn))
+  allocate(tau(nn))
 
   seed = 20191015
 
@@ -101,12 +90,12 @@ program hh_test
   call random_number(evec1)
 
   ! Normalize
-  do i = 1,stripe
+  do i = 1,nc
     dotp = dot_product(evec1(i,:),evec1(i,:))
     evec1(i,:) = evec1(i,:)/sqrt(abs(dotp))
   end do
 
-  do i = 1,na
+  do i = 1,nn
     dotp = dot_product(hh(:,i),hh(:,i))
     hh(:,i) = hh(:,i)/sqrt(abs(dotp))
   end do
@@ -116,12 +105,12 @@ program hh_test
   hh(1,:) = 1.0
 
   ! Start testing CPU reference code
-  call compute_hh_cpu(na,stripe,nbw,evec1,hh,tau)
+  call compute_hh_cpu(nn,nc,nbw,evec1,hh,tau)
 
   write(*,"(2X,A)") "CPU version finished"
 
   ! Start testing GPU code
-  call compute_hh_gpu(na,stripe,nbw,evec2,hh,tau)
+  call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau)
 
   write(*,"(2X,A)") "GPU version finished"
 

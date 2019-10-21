@@ -148,8 +148,19 @@ template <typename T, unsigned int blk> __device__ void reduce_real(T *s_block)
 #endif
 }
 
-// Householder transformation
-// (I - tau * hh * hh^T) * q = q - tau * hh * hh^T * q
+/*
+Householder transformation
+
+(I - tau * hh * hh^T) * q = q - tau * hh * hh^T * q
+
+Name here : Name in doc
+q         : X
+hh        : v
+hh_tau    : tau
+nev       : N_C
+nb        : nbw (==b)
+ncols     : N_R (==n+b-1)
+*/
 template <typename T, unsigned int blk>
 __global__ void compute_hh_trafo_kernel_real(T * __restrict__ q, const T * __restrict__ hh, const T * __restrict__ hh_tau, const int nb, const int ldq, const int ncols)
 {
@@ -200,6 +211,15 @@ __global__ void compute_hh_trafo_kernel_real(T * __restrict__ q, const T * __res
     }
 }
 
+/*
+Name here : Name in doc
+q         : X
+hh        : v
+hh_tau    : tau
+nev       : N_C
+nb        : nbw (==b)
+ncols     : N_R (==n+b-1)
+*/
 extern "C" void compute_hh_gpu_kernel(double *q, const double *hh, const double *hh_tau, const int nev, const int nb, const int ldq, const int ncols)
 {
     switch (nb)

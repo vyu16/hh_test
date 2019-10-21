@@ -67,13 +67,13 @@ module cuda_f_interface
     subroutine compute_hh_gpu_kernel(q,hh,hh_tau,nev,nb,ldq,ncols) bind(c)
       use iso_c_binding, only: c_intptr_t,c_int
       implicit none
-      integer(c_int), value :: nev
-      integer(c_int), value :: nb
-      integer(c_int), value :: ldq
-      integer(c_int), value :: ncols
-      integer(c_intptr_t), value :: q
-      integer(c_intptr_t), value :: hh_tau
-      integer(c_intptr_t), value :: hh
+      integer(c_int), value :: nev ! (N_C)
+      integer(c_int), value :: nb ! (b==nbw)
+      integer(c_int), value :: ldq ! (leading dimension of q)
+      integer(c_int), value :: ncols ! (n)
+      integer(c_intptr_t), value :: q ! (X)
+      integer(c_intptr_t), value :: hh_tau ! (tau)
+      integer(c_intptr_t), value :: hh ! (v)
     end subroutine
   end interface
 

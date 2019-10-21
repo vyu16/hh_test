@@ -19,10 +19,9 @@ Explicitly define Fortran compiler and CUDA installation path if necessary.
 ## Run
 
 ```
-./hh_test arg1 arg2
+./hh_test b n
 ```
 
-* arg1: Length of an individual Householder vector. Must be 2^n, n = 5,6,...,10
-* arg2: Length of eigenvectors. In real calculations it is usually 100 ~ 1000
-
-The reported error should be a small value, otherwise something is wrong.
+See `doc.pdf` for the meanings of `b` and `n`. The value of `b` must be one of
+32, 64, 128, 256, 512, 1024. The reported error should be a very small value,
+otherwise something is wrong.
