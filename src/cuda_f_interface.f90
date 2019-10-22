@@ -64,16 +64,60 @@ module cuda_f_interface
   end interface
 
   interface
+    function cublas_create(handle) result(ierr) bind(c)
+      use iso_c_binding, only: c_intptr_t,c_int
+      implicit none
+      integer(c_intptr_t) :: handle
+      integer(c_int) :: ierr
+    end function
+  end interface
+
+  interface
+    function cublas_destroy(handle) result(ierr) bind(c)
+      use iso_c_binding, only: c_intptr_t,c_int
+      implicit none
+      integer(c_intptr_t) :: handle
+      integer(c_int) :: ierr
+    end function
+  end interface
+
+  interface
+    function cublas_set_stream(handle,stream) result(ierr) bind(c)
+      use iso_c_binding, only: c_intptr_t,c_int
+      implicit none
+      integer(c_intptr_t) :: handle
+      integer(c_intptr_t) :: stream
+      integer(c_int) :: ierr
+    end function
+  end interface
+
+  interface
     subroutine compute_hh_gpu_kernel(q,hh,hh_tau,nev,nb,ldq,ncols) bind(c)
       use iso_c_binding, only: c_intptr_t,c_int
+      implicit none
+      integer(c_int), value :: nev ! (N_C)                                                                                                                                                                           
+      integer(c_int), value :: nb ! (b==nbw)                                                                                                                                                                         
+      integer(c_int), value :: ldq ! (leading dimension of q)                                                                                                                                                        
+      integer(c_int), value :: ncols ! (n)                                                                                                                                                                           
+      integer(c_intptr_t), value :: q ! (X)                                                                                                                                                                          
+      integer(c_intptr_t), value :: hh_tau ! (tau)                                                                                                                                                                   
+      integer(c_intptr_t), value :: hh ! (v)                                                                                                                                                                         
+    end subroutine
+  end interface
+
+  interface
+    subroutine compute_hh_gpu_kernel2(q,hh,hh_tau,work,nev,nb,ldq,ncols,handle) bind(c)
+      use iso_c_binding, only: c_intptr_t,c_int,c_double
       implicit none
       integer(c_int), value :: nev ! (N_C)
       integer(c_int), value :: nb ! (b==nbw)
       integer(c_int), value :: ldq ! (leading dimension of q)
       integer(c_int), value :: ncols ! (n)
       integer(c_intptr_t), value :: q ! (X)
-      integer(c_intptr_t), value :: hh_tau ! (tau)
+      real(c_double), value :: hh_tau(:) ! (tau)
       integer(c_intptr_t), value :: hh ! (v)
+      integer(c_intptr_t), value :: work
+      integer(c_intptr_t), value :: handle
     end subroutine
   end interface
 

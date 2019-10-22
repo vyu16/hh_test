@@ -5,7 +5,7 @@
 program hh_test
 
   use iso_c_binding, only: c_double
-  use compute_hh_wrapper, only: compute_hh_cpu,compute_hh_gpu
+  use compute_hh_wrapper, only: init_hh, free_hh, compute_hh_cpu,compute_hh_gpu
 
   implicit none
 
@@ -15,12 +15,14 @@ program hh_test
   integer :: nr ! (N_R==n+b-1)
   integer :: n_rand
   integer :: i
+  integer :: count1, count2, count_rate, count_max
   real(c_double) :: dotp
   real(c_double) :: err
 
   integer, allocatable :: seed(:)
   real(c_double), allocatable :: evec1(:,:) ! Eigenvector matrix (X)
   real(c_double), allocatable :: evec2(:,:) ! Eigenvector matrix (X)
+  real(c_double), allocatable :: evec3(:,:) ! Eigenvector matrix (X)
   real(c_double), allocatable :: hh(:,:) ! Householder vectors (v)
   real(c_double), allocatable :: tau(:) ! (tau)
 
@@ -80,6 +82,7 @@ program hh_test
   allocate(seed(n_rand))
   allocate(evec1(nc,nr))
   allocate(evec2(nc,nr))
+  allocate(evec3(nc,nr))
   allocate(hh(nbw,nn))
   allocate(tau(nn))
 
@@ -101,18 +104,37 @@ program hh_test
   end do
 
   evec2 = evec1
+  evec3 = evec1
   tau = hh(1,:)
   hh(1,:) = 1.0
 
   ! Start testing CPU reference code
+  call system_clock(count1, count_rate, count_max)
   call compute_hh_cpu(nn,nc,nbw,evec1,hh,tau)
+  call system_clock(count2, count_rate, count_max)
 
-  write(*,"(2X,A)") "CPU version finished"
+  write(*,"(2X,A,E10.2)") "CPU version finished in ", real(count2-count1)/real(count_rate)
 
-  ! Start testing GPU code
-  call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau)
+  ! Initilize GPU functionality
+  call init_hh()
 
-  write(*,"(2X,A)") "GPU version finished"
+  ! Start testing GPU code (initialized by the first call)
+  call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau,1)
+  evec2 = evec3
+  call system_clock(count1, count_rate, count_max)
+  call compute_hh_gpu(nn,nc,nbw,evec3,hh,tau,1)
+  call system_clock(count2, count_rate, count_max)
+
+  write(*,"(2X,A,E10.2)") "GPU version finished in ", real(count2-count1)/real(count_rate)
+
+  call system_clock(count1, count_rate, count_max)
+  call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau,2)
+  call system_clock(count2, count_rate, count_max)
+
+  write(*,"(2X,A,E10.2)") "GPU version #2 finished in ", real(count2-count1)/real(count_rate)
+
+  ! Finalize GPU functionality
+  call free_hh()
 
   ! Compare results
   err = maxval(abs(evec1-evec2))
