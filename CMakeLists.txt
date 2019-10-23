@@ -13,9 +13,10 @@ src/cuda_c_interface.cu
 src/cuda_f_interface.f90
 src/hh_test.f90)
 
-target_link_libraries(hh_test cublas)
+link_directories(${OLCF_ESSL_ROOT}/lib64)
+target_link_libraries(hh_test cublas "/sw/ascent/essl/6.1.0-2/essl/6.1/lib64/libesslsmp.so" lapack)
 
-#set_target_properties(hh_test PROPERTIES LINKER_LANGUAGE Fortran)
+#Set_target_properties(hh_test PROPERTIES LINKER_LANGUAGE Fortran)
 #set_target_properties(hh_test PROPERTIES
 #  Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/include)
 

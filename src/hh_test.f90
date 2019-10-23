@@ -5,7 +5,7 @@
 program hh_test
 
   use iso_c_binding, only: c_double
-  use compute_hh_wrapper, only: init_hh, free_hh, compute_hh_cpu,compute_hh_gpu
+  use compute_hh_wrapper, only: init_hh, free_hh, compute_hh_cpu,compute_hh_gpu,compute_hh_cpu2
 
   implicit none
 
@@ -26,6 +26,10 @@ program hh_test
   real(c_double), allocatable :: evec3(:,:) ! Eigenvector matrix (X)
   real(c_double), allocatable :: hh(:,:) ! Householder vectors (v)
   real(c_double), allocatable :: tau(:) ! (tau)
+
+  real(c_double), allocatable :: work(:,:)
+  real(c_double), allocatable :: work2(:,:)
+  real(c_double), allocatable :: work3(:,:)
 
   ! Read command line arguments
   if(command_argument_count() == 3) then
@@ -86,6 +90,10 @@ program hh_test
   allocate(hh(nbw,nn))
   allocate(tau(nn))
 
+  allocate(work(nn,nn))
+  allocate(work2(nc,nn))
+  allocate(work3(nn+nbw-1,nn))
+
   seed = 20191015
 
   call random_seed(put=seed)
@@ -137,9 +145,16 @@ program hh_test
   call system_clock(count1, count_rate, count_max)
   call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau,3)
   call system_clock(count2, count_rate, count_max)
-!  evec2 = evec3
+  evec2 = evec3
 
   write(*,"(2X,A,E10.2)") "GPU version #3 finished in ", real(count2-count1)/real(count_rate)
+
+  call system_clock(count1, count_rate, count_max)
+  call compute_hh_cpu2(nn,nc,nbw,evec2,hh,work,work2,work3)
+  call system_clock(count2, count_rate, count_max)
+!  evec2 = evec3
+
+  write(*,"(2X,A,E10.2)") "CPU version #2 finished in ", real(count2-count1)/real(count_rate)
 
   ! Finalize GPU functionality
   call free_hh()
@@ -152,7 +167,12 @@ program hh_test
   deallocate(seed)
   deallocate(evec1)
   deallocate(evec2)
+  deallocate(evec3)
   deallocate(hh)
   deallocate(tau)
+
+  deallocate(work)
+  deallocate(work2)
+  deallocate(work3)
 
 end program
