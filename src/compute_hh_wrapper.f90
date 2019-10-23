@@ -8,15 +8,19 @@ module compute_hh_wrapper
   integer :: hh_num
   integer :: tau_num
   integer :: work_num
+  integer :: work2_num
+  integer :: work3_num
 
+  integer(c_intptr_t) :: handle
   integer(c_intptr_t) :: q_dev
   integer(c_intptr_t) :: hh_dev
   integer(c_intptr_t) :: tau_dev
-  integer(c_intptr_t) :: work
-  integer(c_intptr_t) :: handle
+  integer(c_intptr_t) :: work_dev
+  integer(c_intptr_t) :: work2_dev
+  integer(c_intptr_t) :: work3_dev
 
-  private :: q_num, hh_num, tau_num
-  private :: q_dev, hh_dev, tau_dev
+  private :: q_num, hh_num, tau_num, work_num, work2_num, work3_num
+  private :: q_dev, hh_dev, tau_dev, work_dev, work2_dev, work3_dev
 
   contains
 
@@ -36,6 +40,8 @@ module compute_hh_wrapper
     hh_num = 0
     tau_num = 0
     work_num = 0
+    work2_num = 0
+    work3_num = 0
 
   end subroutine
 
@@ -50,12 +56,16 @@ module compute_hh_wrapper
     if(q_num > 0) ok = cuda_free(q_dev)
     if(hh_num > 0) ok = cuda_free(hh_dev)
     if(tau_num > 0) ok = cuda_free(tau_dev)
-    if(work_num > 0) ok = cuda_free(work)
+    if(work_num > 0) ok = cuda_free(work_dev)
+    if(work2_num > 0) ok = cuda_free(work2_dev)
+    if(work3_num > 0) ok = cuda_free(work3_dev)
 
     ok = cublas_destroy(handle)
 
   end subroutine
 
+  ! version = 1 (CUDA BLAS level-1 kernel)
+  ! version = 2 (cuBLAS level-2 kernel)
   subroutine compute_hh_gpu(nn,nc,nbw,q,hh,tau,version)
 
     use cuda_f_interface
@@ -109,19 +119,35 @@ module compute_hh_wrapper
     endif
 
     ! Allocate new workspace if necessary
-    num = nc*size_of_double
+    num = nn*nn*size_of_double
     if(work_num < num) then
-      if(work_num > 0) ok = cuda_free(work)
-      ok = cuda_malloc(work,num)
+      if(work_num > 0) ok = cuda_free(work_dev)
+      ok = cuda_malloc(work_dev,num)
       work_num = num
     end if
 
+    num = nc*nn*size_of_double
+    if(work2_num < num) then
+      if(work2_num > 0) ok = cuda_free(work2_dev)
+      ok = cuda_malloc(work2_dev,num)
+      work2_num = num
+    end if
+
+    num = (nn+nbw-1)*nn*size_of_double
+    if(work3_num < num) then
+      if(work3_num > 0) ok = cuda_free(work3_dev)
+      ok = cuda_malloc(work3_dev,num)
+      work3_num = num
+    end if
+
     ! Compute
-    if(version == 1)then
+    if(version == 1) then
       call compute_hh_gpu_kernel(q_dev,hh_dev,tau_dev,nc,nbw,nc,nn)
-    else
-      call compute_hh_gpu_kernel2(q_dev,hh_dev,tau,work,nc,nbw,nc,nn,handle)
-    endif
+    else if(version == 2) then
+      call compute_hh_gpu_kernel2(q_dev,hh_dev,tau,work2_dev,nc,nbw,nc,nn,handle)
+    else if(version == 3) then
+      call compute_hh_gpu_kernel3(q_dev,hh_dev,work_dev,work2_dev,work3_dev,nc,nbw,nc,nn,handle)
+    end if
 
     ! Copy q to CPU
     num = nc*(nn+nbw-1)*size_of_double

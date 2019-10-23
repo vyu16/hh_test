@@ -121,6 +121,23 @@ module cuda_f_interface
     end subroutine
   end interface
 
+  interface
+    subroutine compute_hh_gpu_kernel3(q,hh,work,work2,work3,nev,nb,ldq,ncols,handle) bind(c)
+      use iso_c_binding, only: c_intptr_t,c_int,c_double
+      implicit none
+      integer(c_int), value :: nev ! (N_C)                                                                                                                                                                           
+      integer(c_int), value :: nb ! (b==nbw)                                                                                                                                                                         
+      integer(c_int), value :: ldq ! (leading dimension of q)                                                                                                                                                        
+      integer(c_int), value :: ncols ! (n)                                                                                                                                                                           
+      integer(c_intptr_t), value :: q ! (X)                                                                                                                                                                          
+      integer(c_intptr_t), value :: hh ! (v)                                                                                                                                                                         
+      integer(c_intptr_t), value :: work
+      integer(c_intptr_t), value :: work2
+      integer(c_intptr_t), value :: work3
+      integer(c_intptr_t), value :: handle
+    end subroutine
+  end interface
+
   contains
 
     subroutine gpu_init()

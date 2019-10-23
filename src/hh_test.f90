@@ -13,6 +13,7 @@ program hh_test
   integer :: nbw ! Length of Householder vectors (b==nbw)
   integer :: nn ! Length of eigenvectors (n)
   integer :: nr ! (N_R==n+b-1)
+  integer :: nc ! Number of eigenvectors (N_C)
   integer :: n_rand
   integer :: i
   integer :: count1, count2, count_rate, count_max
@@ -26,10 +27,8 @@ program hh_test
   real(c_double), allocatable :: hh(:,:) ! Householder vectors (v)
   real(c_double), allocatable :: tau(:) ! (tau)
 
-  integer, parameter :: nc = 1024 ! Number of eigenvectors (N_C)
-
   ! Read command line arguments
-  if(command_argument_count() == 2) then
+  if(command_argument_count() == 3) then
     call get_command_argument(1,arg)
 
     read(arg,*) nbw
@@ -53,9 +52,9 @@ program hh_test
 
     read(arg,*) nn
 
-    if(nn <= 0) then
-      nn = 1000
-    end if
+    call get_command_argument(3,arg)
+
+    read(arg,*) nc
 
     nr = nn+nbw-1
 
@@ -69,7 +68,8 @@ program hh_test
     write(*,"(2X,A)") "##  Wrong number of command line arguments!!  ##"
     write(*,"(2X,A)") "##  Arg#1: Length of Householder vector       ##"
     write(*,"(2X,A)") "##         (must be 2^n, n = 5,6,...,10)      ##"
-    write(*,"(2X,A)") "##  Arg#2: Length of eigenvectors             ##"
+    write(*,"(2X,A)") "##  Arg#2: Number of Householder vectors      ##"
+    write(*,"(2X,A)") "##  Arg#3: Number of eigenvectors             ##"
     write(*,"(2X,A)") "################################################"
 
     stop
@@ -105,8 +105,7 @@ program hh_test
 
   evec2 = evec1
   evec3 = evec1
-  tau = hh(1,:)
-  hh(1,:) = 1.0
+  tau = 2.0
 
   ! Start testing CPU reference code
   call system_clock(count1, count_rate, count_max)
@@ -122,16 +121,25 @@ program hh_test
   call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau,1)
   evec2 = evec3
   call system_clock(count1, count_rate, count_max)
-  call compute_hh_gpu(nn,nc,nbw,evec3,hh,tau,1)
+  call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau,1)
   call system_clock(count2, count_rate, count_max)
+  evec2 = evec3
 
   write(*,"(2X,A,E10.2)") "GPU version finished in ", real(count2-count1)/real(count_rate)
 
   call system_clock(count1, count_rate, count_max)
   call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau,2)
   call system_clock(count2, count_rate, count_max)
+  evec2 = evec3
 
   write(*,"(2X,A,E10.2)") "GPU version #2 finished in ", real(count2-count1)/real(count_rate)
+
+  call system_clock(count1, count_rate, count_max)
+  call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau,3)
+  call system_clock(count2, count_rate, count_max)
+!  evec2 = evec3
+
+  write(*,"(2X,A,E10.2)") "GPU version #3 finished in ", real(count2-count1)/real(count_rate)
 
   ! Finalize GPU functionality
   call free_hh()
