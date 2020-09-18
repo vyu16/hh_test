@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "cuda_runtime.h"
 
+// Try CUDA 11 warp reduce
+
 #if (CUDART_VERSION >= 9000)
 template <typename T, unsigned int blk> __device__ void warp_shfl_reduce_real(volatile T *s_block)
 {
@@ -153,7 +155,7 @@ Householder transformation
 
 (I - tau * hh * hh^T) * q = q - tau * hh * hh^T * q
 
-Name here : Name in doc
+Name here : Name in paper
 q         : X
 hh        : v
 hh_tau    : tau
@@ -175,6 +177,7 @@ __global__ void compute_hh_trafo_kernel_real(T * __restrict__ q, const T * __res
     unsigned int bid = blockIdx.x;
 
     j = ncols;
+    // q_off bad access!
     q_off = bid + (j + tid - 1) * ldq;
     h_off = tid + (j - 1) * nb;
     q_s[tid] = q[q_off];
@@ -212,7 +215,7 @@ __global__ void compute_hh_trafo_kernel_real(T * __restrict__ q, const T * __res
 }
 
 /*
-Name here : Name in doc
+Name here : Name in paper
 q         : X
 hh        : v
 hh_tau    : tau

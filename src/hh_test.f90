@@ -33,7 +33,15 @@ program hh_test
     read(arg,*) nbw
 
     ! Must be 2^n
-    if(nbw <= 32) then
+    if(nbw <= 2) then
+      nbw = 2
+    else if(nbw <= 4) then
+      nbw = 4
+    else if(nbw <= 8) then
+      nbw = 8
+    else if(nbw <= 16) then
+      nbw = 16
+    else if(nbw <= 32) then
       nbw = 32
     else if(nbw <= 64) then
       nbw = 64
@@ -66,7 +74,7 @@ program hh_test
     write(*,"(2X,A)") "################################################"
     write(*,"(2X,A)") "##  Wrong number of command line arguments!!  ##"
     write(*,"(2X,A)") "##  Arg#1: Length of Householder vector       ##"
-    write(*,"(2X,A)") "##         (must be 2^n, n = 5,6,...,10)      ##"
+    write(*,"(2X,A)") "##         (must be 2^n, n = 1,2,...,10)      ##"
     write(*,"(2X,A)") "##  Arg#2: Length of eigenvectors             ##"
     write(*,"(2X,A)") "################################################"
 
@@ -76,14 +84,14 @@ program hh_test
   ! Generate random data
   call random_seed(size=n_rand)
 
-  ! Note: evec here is the transpose of X in the doc
+  ! Note: evec here is the transpose of X in the paper
   allocate(seed(n_rand))
   allocate(evec1(nc,nr))
   allocate(evec2(nc,nr))
   allocate(hh(nbw,nn))
   allocate(tau(nn))
 
-  seed = 20191015
+  seed(:) = 20191015
 
   call random_seed(put=seed)
   call random_number(hh)
@@ -100,8 +108,8 @@ program hh_test
     hh(:,i) = hh(:,i)/sqrt(abs(dotp))
   end do
 
-  evec2 = evec1
-  tau = hh(1,:)
+  evec2(:,:) = evec1
+  tau(:) = hh(1,:)
   hh(1,:) = 1.0
 
   ! Start testing CPU reference code
