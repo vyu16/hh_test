@@ -1,3 +1,29 @@
+! ******
+!
+! The MIT License (MIT)
+!
+! Copyright (c) 2019 Victor Yu
+! Copyright (c) 2020 NVIDIA CORPORATION
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy of
+! this software and associated documentation files (the "Software"), to deal in
+! the Software without restriction, including without limitation the rights to
+! use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+! the Software, and to permit persons to whom the Software is furnished to do so,
+! subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in all
+! copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+! FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+! COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+! IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+! CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+!
+! ******
+
 !
 ! This program tests the CUDA kernel for Householder transformations.
 ! It is separeted from the 4th step of the ELPA2 eigensolver.
@@ -9,9 +35,10 @@ program hh_test
 
   implicit none
 
-  character(10) :: arg
+  character(40) :: arg
   integer :: nbw ! Length of Householder vectors (b==nbw)
   integer :: nn ! Length of eigenvectors (n)
+  integer :: nc ! Number of eigenvectors (N_C)
   integer :: nr ! (N_R==n+b-1)
   integer :: n_rand
   integer :: i
@@ -24,10 +51,10 @@ program hh_test
   real(c_double), allocatable :: hh(:,:) ! Householder vectors (v)
   real(c_double), allocatable :: tau(:) ! (tau)
 
-  integer, parameter :: nc = 1024 ! Number of eigenvectors (N_C)
+  real :: start, finish
 
   ! Read command line arguments
-  if(command_argument_count() == 2) then
+  if(command_argument_count() == 3) then
     call get_command_argument(1,arg)
 
     read(arg,*) nbw
@@ -65,6 +92,14 @@ program hh_test
 
     nr = nn+nbw-1
 
+    call get_command_argument(3,arg)
+
+    read(arg,*) nc
+
+    if(nc <= 0) then
+      nc = 1024
+    end if
+
     write(*,"(2X,A)") "Test parameters:"
     write(*,"(2X,A,I10)") "| b  : ",nbw
     write(*,"(2X,A,I10)") "| n  : ",nn
@@ -76,6 +111,7 @@ program hh_test
     write(*,"(2X,A)") "##  Arg#1: Length of Householder vector       ##"
     write(*,"(2X,A)") "##         (must be 2^n, n = 1,2,...,10)      ##"
     write(*,"(2X,A)") "##  Arg#2: Length of eigenvectors             ##"
+    write(*,"(2X,A)") "##  Arg#3: Number of eigenvectors             ##"
     write(*,"(2X,A)") "################################################"
 
     stop
@@ -117,10 +153,15 @@ program hh_test
 
   write(*,"(2X,A)") "CPU version finished"
 
+  call cpu_time(start)
+
   ! Start testing GPU code
   call compute_hh_gpu(nn,nc,nbw,evec2,hh,tau)
 
-  write(*,"(2X,A)") "GPU version finished"
+  call cpu_time(finish)
+
+  write(*,"(2X,A,F6.3,A)") "GPU version finished, took ",finish-start," seconds."
+  ! print '("  GPU version Time = ",f6.3," seconds.")',finish-start
 
   ! Compare results
   err = maxval(abs(evec1-evec2))
