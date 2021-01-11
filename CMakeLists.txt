@@ -1,4 +1,4 @@
-[[
+#[[
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Victor Yu
@@ -21,7 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 
 project(hh_test VERSION 0.0.1 LANGUAGES Fortran CUDA)
 
